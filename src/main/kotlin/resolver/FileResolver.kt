@@ -11,6 +11,9 @@ object FileResolver {
 			else -> HttpResponse.withoutBody(HttpStatusCode.NOT_FOUND)
 		}
 
+	fun writeFile(dir: String, body: String) =
+		File(dir).writeText(body)
+
 	private fun readFile(dir: String): String =
 		File(dir).readText(Charsets.UTF_8)
 

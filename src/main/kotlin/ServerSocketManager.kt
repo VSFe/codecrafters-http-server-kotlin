@@ -41,7 +41,7 @@ object ServerSocketManager {
 		val requestLine = bufferedReader.readLine()
 		val httpRequestLine = HttpRequestLine.createHttpRequest(requestLine)
 		val httpHeader = parseRequestHeader(bufferedReader)
-		val body = if (httpHeader.containsKey("Content-Length")) bufferedReader.readLine() else null
+		val body = if (httpHeader.containsKey("Content-Length")) bufferedReader.readLetter(httpHeader["Content-Length"]!!.toInt()) else null
 
 		return HttpRequest(httpRequestLine, httpHeader, body)
 	}
@@ -58,13 +58,19 @@ object ServerSocketManager {
 
 	private fun processData(httpRequest: HttpRequest): HttpResponse {
 		val path = httpRequest.httpRequestLine.url
+		val method = httpRequest.httpRequestLine.httpMethod
 		val header = httpRequest.header
 
 		return when {
 			path == "/" -> HttpResponse.withoutBody(HttpStatusCode.OK)
 			path == "/user-agent" -> HttpResponse.withTextBody(HttpStatusCode.OK, header["User-Agent"]!!)
 			path.startsWith("/echo/") -> HttpResponse.withTextBody(HttpStatusCode.OK, path.substringAfter("/echo/"))
-			path.startsWith("/files/") -> FileResolver.resolveFile("${param["directory"]}${path.substringAfter("/files/")}")
+			path.startsWith("/files/") && method == HttpMethod.GET -> FileResolver.resolveFile("${param["directory"]}${path.substringAfter("/files/")}")
+			path.startsWith("/files/") && method == HttpMethod.POST -> {
+				FileResolver.writeFile("${param["directory"]}${path.substringAfter("/files/")}", httpRequest.body!!)
+				HttpResponse.withoutBody(HttpStatusCode.CREATED)
+			}
+
 			else -> HttpResponse.withoutBody(HttpStatusCode.NOT_FOUND)
 		}
 	}
@@ -89,3 +95,9 @@ object ServerSocketManager {
 		outputStream.close()
 	}
 }
+
+
+fun BufferedReader.readLetter(size: Int): String =
+	(1..size)
+		.map { read().toChar() }
+		.joinToString("")
