@@ -17,7 +17,7 @@ data class HttpResponse(
 			val header = buildMap {
 				put("Content-Type", "text/plain")
 				if (body != null) put("Content-Length", body.length.toString())
-				if (requestHeader["Accept-Encoding"] == "gzip") put("Content-Encoding", "gzip")
+				if (containsGzip(requestHeader)) put("Content-Encoding", "gzip")
 			}
 			return HttpResponse(header, httpStatusCode, body)
 		}
@@ -26,9 +26,15 @@ data class HttpResponse(
 			val header = buildMap {
 				put("Content-Type", "application/octet-stream")
 				put("Content-Length", body.length.toString())
-				if (requestHeader["Accept-Encoding"] == "gzip") put("Content-Encoding", "gzip")
+				if (containsGzip(requestHeader)) put("Content-Encoding", "gzip")
 			}
 			return HttpResponse(header, httpStatusCode, body)
 		}
+
+		private fun containsGzip(requestHeader: Map<String, String>): Boolean =
+			requestHeader["Accept-Encoding"]?.let {
+				it.split(",")
+					.any{ str -> str.trim() == "gzip" }
+			} ?: false
 	}
 }
