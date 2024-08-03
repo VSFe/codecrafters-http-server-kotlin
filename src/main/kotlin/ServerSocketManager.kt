@@ -1,5 +1,7 @@
 import request.HttpRequest
 import request.HttpRequestLine
+import resolver.FileResolver
+import response.HttpResponse
 import java.io.BufferedReader
 import java.io.OutputStream
 import java.net.ServerSocket
@@ -9,8 +11,10 @@ import java.util.concurrent.Executors
 object ServerSocketManager {
 	private val serverSocket = ServerSocket(CommonConstant.PORT)
 	private val requestExecutor = Executors.newFixedThreadPool(10)
+	private lateinit var param: Map<String, String>
 
-	fun init() {
+	fun init(param: Map<String, String>) {
+		this.param = param
 		serverSocket.reuseAddress = true
 	}
 
@@ -29,7 +33,7 @@ object ServerSocketManager {
 
 			val result = processData(httpRequest)
 			val responseHeader = createResponseHeader(result)
-			writeResponse(outputStream, responseHeader, result.first)
+			writeResponse(outputStream, responseHeader, result.body)
 		}
 	}
 
@@ -52,25 +56,26 @@ object ServerSocketManager {
 			.toMap()
 	}
 
-	private fun processData(httpRequest: HttpRequest): Pair<String?, HttpStatusCode> {
+	private fun processData(httpRequest: HttpRequest): HttpResponse {
 		val path = httpRequest.httpRequestLine.url
+		val header = httpRequest.header
 
 		return when {
-			path == "/" -> null to HttpStatusCode.OK
-			path == "/user-agent" -> httpRequest.header["User-Agent"] to HttpStatusCode.OK
-			path.startsWith("/echo/") -> path.substringAfter("/echo/") to HttpStatusCode.OK
-			else -> null to HttpStatusCode.NOT_FOUND
+			path == "/" -> HttpResponse.withoutBody(HttpStatusCode.OK)
+			path == "/user-agent" -> HttpResponse.withTextBody(HttpStatusCode.OK, header["User-Agent"]!!)
+			path.startsWith("/echo/") -> HttpResponse.withTextBody(HttpStatusCode.OK, path.substringAfter("/echo/"))
+			path.startsWith("/files/") -> FileResolver.resolveFile("${param["directory"]}${path.substringAfter("/files/")}")
+			else -> HttpResponse.withoutBody(HttpStatusCode.NOT_FOUND)
 		}
 	}
 
-	private fun createResponseHeader(result: Pair<String?, HttpStatusCode>): String {
-		val (response, httpStatusCode) = result
-		val statusLine = httpStatusCode.statusLine
+	private fun createResponseHeader(response: HttpResponse): String {
+		val (header, statusCode, _) = response
+		val statusLine = statusCode.statusLine
 		val responseHeader = StringBuilder(statusLine)
 
-		if (response != null) {
-			responseHeader.append("Content-Type: text/plain\r\n")
-			responseHeader.append("Content-Length: ${response.length}\r\n")
+		header.forEach {
+			responseHeader.append("${it.key}: ${it.value}\r\n")
 		}
 
 		responseHeader.append("\r\n")
