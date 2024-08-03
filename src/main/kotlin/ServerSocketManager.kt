@@ -3,9 +3,12 @@ import request.HttpRequestLine
 import java.io.BufferedReader
 import java.io.OutputStream
 import java.net.ServerSocket
+import java.net.Socket
+import java.util.concurrent.Executors
 
 object ServerSocketManager {
 	private val serverSocket = ServerSocket(CommonConstant.PORT)
+	private val requestExecutor = Executors.newFixedThreadPool(10)
 
 	fun init() {
 		serverSocket.reuseAddress = true
@@ -13,6 +16,12 @@ object ServerSocketManager {
 
 	fun process() {
 		val socket = serverSocket.accept()
+		requestExecutor.execute {
+			processInner(socket)
+		}
+	}
+
+	private fun processInner(socket: Socket) {
 		val inputStream = socket.getInputStream()
 		inputStream.bufferedReader().use {
 			val httpRequest = readRequest(it)
