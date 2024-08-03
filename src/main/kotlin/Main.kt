@@ -5,7 +5,6 @@ fun main() {
 	println("accepted new connection")
 
 	while (true) {
-		var aa = ServerSocketManager.process()
-		println(aa)
+		ServerSocketManager.process()
 	}
 }
