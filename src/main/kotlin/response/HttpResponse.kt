@@ -8,26 +8,25 @@ data class HttpResponse(
 	val body: String?
 ) {
 	companion object {
-		fun withoutBody(httpStatusCode: HttpStatusCode): HttpResponse = HttpResponse(emptyMap(), httpStatusCode, null)
+		fun withoutBody(requestHeader: Map<String, String>, httpStatusCode: HttpStatusCode): HttpResponse = withTextBody(requestHeader, httpStatusCode, null)
 
-		fun withTextBody(requestHeader: Map<String, String>, httpStatusCode: HttpStatusCode, body: String): HttpResponse {
-			val header = buildMap<String, String> {
-				"Content-Type" to "text/plain"
-				"Content-Length" to body.length.toString()
-				if (requestHeader["Accept-Encoding"] == "gzip") {
-					"Content-Encoding" to "gzip"
-				}
+		fun withTextBody(requestHeader: Map<String, String>, httpStatusCode: HttpStatusCode, body: String?): HttpResponse {
+			println(requestHeader)
+			println(requestHeader["Accept-Encoding"])
+
+			val header = buildMap {
+				put("Content-Type", "text/plain")
+				if (body != null) put("Content-Length", body.length.toString())
+				if (requestHeader["Accept-Encoding"] == "gzip") put("Content-Encoding", "gzip")
 			}
 			return HttpResponse(header, httpStatusCode, body)
 		}
 
 		fun withFileBody(requestHeader: Map<String, String>, httpStatusCode: HttpStatusCode, body: String): HttpResponse {
-			val header = buildMap<String, String> {
-				"Content-Type" to "application/octet-stream"
-				"Content-Length" to body.length.toString()
-				if (requestHeader["Accept-Encoding"] == "gzip") {
-					"Content-Encoding" to "gzip"
-				}
+			val header = buildMap {
+				put("Content-Type", "application/octet-stream")
+				put("Content-Length", body.length.toString())
+				if (requestHeader["Accept-Encoding"] == "gzip") put("Content-Encoding", "gzip")
 			}
 			return HttpResponse(header, httpStatusCode, body)
 		}

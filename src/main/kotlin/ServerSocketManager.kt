@@ -62,7 +62,7 @@ object ServerSocketManager {
 		val header = httpRequest.header
 
 		return when {
-			path == "/" -> HttpResponse.withoutBody(HttpStatusCode.OK)
+			path == "/" -> HttpResponse.withoutBody(header, HttpStatusCode.OK)
 			path == "/user-agent" -> HttpResponse.withTextBody(header, HttpStatusCode.OK, header["User-Agent"]!!)
 			path.startsWith("/echo/") -> HttpResponse.withTextBody(header, HttpStatusCode.OK, path.substringAfter("/echo/"))
 			path.startsWith("/files/") && method == HttpMethod.GET -> {
@@ -71,15 +71,15 @@ object ServerSocketManager {
 					header,
 					HttpStatusCode.OK,
 					FileResolver.readFile(fileDir)
-				) else HttpResponse.withoutBody(HttpStatusCode.NOT_FOUND)
+				) else HttpResponse.withoutBody(header, HttpStatusCode.NOT_FOUND)
 			}
 
 			path.startsWith("/files/") && method == HttpMethod.POST -> {
 				FileResolver.writeFile("${param["directory"]}${path.substringAfter("/files/")}", httpRequest.body!!)
-				HttpResponse.withoutBody(HttpStatusCode.CREATED)
+				HttpResponse.withoutBody(header, HttpStatusCode.CREATED)
 			}
 
-			else -> HttpResponse.withoutBody(HttpStatusCode.NOT_FOUND)
+			else -> HttpResponse.withoutBody(header, HttpStatusCode.NOT_FOUND)
 		}
 	}
 
