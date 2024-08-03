@@ -96,9 +96,9 @@ object ServerSocketManager {
 		return responseHeader.toString()
 	}
 
-	private fun writeResponse(outputStream: OutputStream, header: String, response: String?) {
+	private fun writeResponse(outputStream: OutputStream, header: String, response: ByteArray?) {
 		outputStream.write(header.toByteArray())
-		response?.let { outputStream.write(it.toByteArray()) }
+		response?.let { outputStream.write(it) }
 		outputStream.flush()
 		outputStream.close()
 	}
